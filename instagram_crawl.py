@@ -33,11 +33,10 @@ def openInstagram(name: str):
 
     # 게시물 전부 수집
     posts = driver.find_elements(By.XPATH, "//a[contains(@href,'/p/')]")
-    post_num = 50 if len(posts)>50 else len(posts)
+    post_num = 30 if len(posts) > 30 else len(posts)
 
     urls = []
-    # for post in posts:
-    #     urls.append(post.get_attribute('href'))
+
     for i in range(post_num):
         urls.append(posts[i].get_attribute('href'))
 
@@ -78,8 +77,7 @@ def openInstagram(name: str):
                 # 유니코드 범위를 기반으로 이모티콘 제거
                 code_point = ord(s)
                 if SUPPORTED_RANGE_START <= code_point <= SUPPORTED_RANGE_END:
-                    splitlines = s.splitlines()
-                    rst += splitlines
+                    rst += s
                 else:
                     pass
 
@@ -88,9 +86,5 @@ def openInstagram(name: str):
             i += 1
             pass
     rst = rst.replace(name, '')
-    print(rst)
     driver.quit()
     return [rst]
-
-
-# url format -> https://www.instagram.com/p/~
