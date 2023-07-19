@@ -16,7 +16,7 @@ util = IUtils()
 
 def run_algorithm(url):
     # text = util.post_by_user(url)
-    text = util.post_by_post_url(url)
+    text = util.post_by_user(url)
 
     print("====================")
     print("text: ", text)
