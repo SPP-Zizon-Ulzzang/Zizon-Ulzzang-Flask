@@ -33,14 +33,14 @@ def predict():
     snsUrl = request.args.get("snsUrl")
 
     # url을 통한 크롤링 후 데이터를 기반으로 분류 실행
-    try:
-        result = run_algorithm(snsUrl)
-    except Exception as ex:
-        print(ex)
-        response = {
-            "mbti": "error"
-        }
-        return jsonify(response)
+    # try:
+    result = run_algorithm(snsUrl)
+    # except Exception as ex:
+    #     print(ex)
+    #     response = {
+    #         "mbti": "error"
+    #     }
+    #     return jsonify(response)
 
     response = {
         "mbti": str(result)
