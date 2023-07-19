@@ -5,15 +5,13 @@ from instagrapi import Client
 
 
 class InstagramUtils:
+    load_dotenv()
+
+    INSTA_ID = os.environ.get("INSTA_ID")
+    INSTA_PW = os.environ.get("INSTA_PW")
     cl = Client()
-
-    def __int__(self):
-        load_dotenv()
-
-        INSTA_ID = os.environ.get("INSTA_ID")
-        INSTA_PW = os.environ.get("INSTA_PW")
-        # 인스타그램 로그인
-        self.cl.login(INSTA_ID, INSTA_PW)
+    cl.login(INSTA_ID, INSTA_PW)
+    print("login - ", INSTA_ID)
 
     def post_by_user(self, usern_name):
         # 인스타 게시물 수 by username(id)
