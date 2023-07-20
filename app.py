@@ -78,5 +78,17 @@ def predict_by_instagram():
     return jsonify(response)
 
 
+@app.route('/introduction', methods=['GET'])
+def predict_by_introduction():
+    text = request.args.get('text')
+    print("introduction: ", text)
+    mbti = mbti_predict([text])
+
+    response = {
+        "mbti": str(mbti)
+    }
+    return jsonify(response)
+
+
 if __name__ == '__main__':
     app.run()
