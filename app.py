@@ -2,8 +2,12 @@ import pickle
 
 from flask import Flask, jsonify, request, make_response
 import warnings
+
+from instagrapi.exceptions import ClientLoginRequired
+
 from instagramUtils import InstagramUtils as IUtils
-import instagram_crawl as crawler
+import CustomErrors
+
 warnings.filterwarnings('ignore')
 
 app = Flask(__name__)
@@ -14,16 +18,22 @@ with open('saved_model.pkl', 'rb') as file:
 util = IUtils()
 
 
-def run_algorithm(url):
-    # text = util.post_by_user(url)
-    text = util.post_by_user(url)
+def extract_text_instagram(user_name: str):
+    try:
+        text = util.post_by_user(user_name)
+    except Exception as e:
+        raise e
 
     print("====================")
     print("text: ", text)
 
-    if len(text)<1:
+    if len(text) < 1:
         raise RuntimeError("비공개 계정 또는 텍스트가 존재하지 않습니다.")
 
+    return text
+
+
+def mbti_predict(text: str):
     # 모델을 통한 예측
     predicted_labels = model.predict(text)
 
@@ -33,22 +43,40 @@ def run_algorithm(url):
 
 
 @app.route('/instagram', methods=['GET'])
-def predict():
+def predict_by_instagram():
     # POST 요청에서 데이터 추출
     sns_url = request.args.get("snsUrl")
 
-    print("sns_url: ",sns_url)
+    print("sns_url: ", sns_url)
 
     # url을 통한 크롤링 후 데이터를 기반으로 분류 실행
     try:
-        result = run_algorithm(sns_url)
-    except RuntimeError as e:
-        message = e.args
+        text = extract_text_instagram(sns_url)
+        result = mbti_predict(text)
+    except ClientLoginRequired as e:
+        util.cl.relogin()
+        print("error: ", e.args)
+        message = str(e.args[0])
+        response = make_response(message, 500)
+        return response
+    except CustomErrors.NoPostError as e:
+        print("error: ", e.args)
+        message = str(e.args[0])
         response = make_response(message, 400)
         return response
+    except CustomErrors.NoAccountError as e:
+        print("error: ", e.args)
+        message = str(e.args[0])
+        response = make_response(message, 404)
+        return response
+    except CustomErrors.PrivateAccountError as e:
+        print("error: ", e.args)
+        message = str(e.args[0])
+        response = make_response(message, 401)
+        return response
     except Exception as e:
-        print(e.args)
-        message = "크롤링 중 오류가 발생했습니다."
+        print("error: ", e.args)
+        message = str(e.args[0])
         response = make_response(message, 500)
         return response
 
@@ -56,6 +84,18 @@ def predict():
         "mbti": str(result)
     }
     # 결과를 JSON 형식으로 반환
+    return jsonify(response)
+
+
+@app.route('/introduction', methods=['GET'])
+def predict_by_introduction():
+    text = request.args.get('text')
+    print("introduction: ", text)
+    mbti = mbti_predict([text])
+
+    response = {
+        "mbti": str(mbti)
+    }
     return jsonify(response)
 
 
