@@ -2,6 +2,8 @@ import os
 
 from dotenv import load_dotenv
 from instagrapi import Client
+from instagrapi.exceptions import ClientLoginRequired
+
 import CustomErrors
 
 class InstagramUtils:
@@ -23,6 +25,8 @@ class InstagramUtils:
                 raise CustomErrors.PrivateAccountError("비공개 계정입니다.")
             if isNoPost:
                 raise CustomErrors.NoPostError("게시물이 없습니다.")
+        except ClientLoginRequired as e:
+            raise e
         except CustomErrors.CustomError as e:
             raise e
         except Exception as e:
