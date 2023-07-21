@@ -2,6 +2,9 @@ import pickle
 
 from flask import Flask, jsonify, request, make_response
 import warnings
+
+from instagrapi.exceptions import ClientLoginRequired
+
 from instagramUtils import InstagramUtils as IUtils
 import CustomErrors
 
@@ -50,6 +53,12 @@ def predict_by_instagram():
     try:
         text = extract_text_instagram(sns_url)
         result = mbti_predict(text)
+    except ClientLoginRequired as e:
+        util.cl.relogin()
+        print("error: ", e.args)
+        message = str(e.args[0])
+        response = make_response(message, 500)
+        return response
     except CustomErrors.NoPostError as e:
         print("error: ", e.args)
         message = str(e.args[0])
