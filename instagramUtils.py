@@ -1,3 +1,4 @@
+import logging
 import os
 
 from dotenv import load_dotenv
@@ -6,16 +7,39 @@ from instagrapi.exceptions import ClientLoginRequired
 
 import CustomErrors
 
+
 class InstagramUtils:
+    """인스타그램 데이터 수집을 위한 유틸 클래스"""
     load_dotenv()
 
+    # 로거 설정
+    logger = logging.getLogger()
+
+    # 인스타그램 로그인
     INSTA_ID = os.environ.get("INSTA_ID")
     INSTA_PW = os.environ.get("INSTA_PW")
     cl = Client()
     cl.login(INSTA_ID, INSTA_PW)
+    cl.dump_settings("session.json")
+
+    logger.info("Instagram Login %s" % INSTA_ID)
     print("login - ", INSTA_ID)
 
+    def re_login(self):
+        """
+        재 로그인
+        :return:
+        """
+        self.cl.login(self.INSTA_ID, self.INSTA_PW)
+        self.cl.dump_settings("session.json")
+        self.logger.info("Instagram Login %s" % self.INSTA_ID)
+
     def post_by_user(self, user_name):
+        """
+        사용자 이름을 통한 게시글 조회
+        :param user_name:
+        :return: text: [str]
+        """
         try:
             user_info = self.cl.user_info_by_username(user_name)
             isPirvate = user_info.is_private
@@ -47,10 +71,3 @@ class InstagramUtils:
             all_text += post.caption_text
 
         return [all_text]
-
-    def post_by_post_url(self, url):
-        # 게시물 텍스트 추출
-        code = self.cl.media_pk_from_url(url)
-        caption_text = self.cl.media_info(code).caption_text
-
-        return [caption_text]
