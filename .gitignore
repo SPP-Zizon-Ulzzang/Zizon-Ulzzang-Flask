@@ -2,3 +2,4 @@
 *.xml
 *.log
 *.pyc
+/session.json
