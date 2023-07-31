@@ -75,7 +75,7 @@ def predict_by_instagram():
     try:
         util.cl.get_timeline_feed()
     except LoginRequired:
-        logger.info("Session is invalid, need to login via username and password")
+        logger.error("Session is invalid, need to login via username and password")
 
         old_session = util.cl.get_settings()
 
