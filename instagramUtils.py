@@ -73,4 +73,4 @@ class InstagramUtils:
         for post in posts:
             all_text += post.caption_text
 
-        return [all_text]
+        return [all_text.replace("\n", "")]
