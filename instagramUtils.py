@@ -1,11 +1,19 @@
 import logging
 import os
+import re
 
 from dotenv import load_dotenv
 from instagrapi import Client
 from instagrapi.exceptions import ClientLoginRequired
 
 import CustomErrors
+
+
+def remove_special_characters_using_regex(input_string):
+    # 정규표현식으로 특수 문자 제거
+    pattern = r"[^\w\s]"
+    result_string = re.sub(pattern, "", input_string)
+    return result_string
 
 
 class InstagramUtils:
@@ -73,4 +81,5 @@ class InstagramUtils:
         for post in posts:
             all_text += post.caption_text
 
+        all_text = remove_special_characters_using_regex(all_text)
         return [all_text.replace("\n", "")]
