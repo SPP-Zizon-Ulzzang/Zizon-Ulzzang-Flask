@@ -19,6 +19,9 @@ class InstagramUtils:
     INSTA_ID = os.environ.get("INSTA_ID")
     INSTA_PW = os.environ.get("INSTA_PW")
     cl = Client()
+
+    cl.delay_range = [1, 2]
+
     cl.login(INSTA_ID, INSTA_PW)
     cl.dump_settings("session.json")
 
