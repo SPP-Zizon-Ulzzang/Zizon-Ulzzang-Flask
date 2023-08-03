@@ -2,6 +2,8 @@
 ## 개요
 메인 서버인 스프링 서버에서의 요청에 따라 작성글을 바탕으로 MBTI분석 후 결과를 스프링 서버에 반환한다.
 
+Front End: <https://github.com/SPP-Zizon-Ulzzang/Zizon-Ulzzang-FE>
+
 스프링 서버: <https://github.com/SPP-Zizon-Ulzzang/Zizon-Ulzzang-BE>
 ## 기능
 ### 1. 인스타그램 게시글 분석
