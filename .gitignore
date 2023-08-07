@@ -2,4 +2,5 @@
 *.xml
 *.log
 *.pyc
+*.pkl
 /session.json
