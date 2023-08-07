@@ -15,13 +15,14 @@ client = discord.Client(intents=discord.Intents.default())
 async def on_ready():
     print('We have logged in as {0.user}'.format(client)) #봇이 실행되면 콘솔창에 표시
     
-    error_message = "An error occurred in the Flask server"
+    error_message = "!!!Flask server에서 에러가 발생했습니다!!!"
     channel = client.get_channel(int(channel_id))
 
     if channel:
         await channel.send(error_message)
+        await client.close()
     else:
-        print("Error: Unable to find the specified Discord channel.")
+        print("디스코드 채널을 찾을 수 없습니다")
 
 client.run(bot_token)
 

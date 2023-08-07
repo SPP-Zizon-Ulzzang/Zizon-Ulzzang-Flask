@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+import discord
 
 from dotenv import load_dotenv
 from instagrapi import Client
@@ -8,13 +9,32 @@ from instagrapi.exceptions import ClientLoginRequired
 
 import CustomErrors
 
+# 디스코드로 에러 전송 (봇)
+def send_error_to_discord(error_message):
+    # 환경변수 가져오기
+    load_dotenv()
+    bot_token = os.environ.get("BOT_TOKEN")
+    channel_id = os.environ.get("CHANNEL_ID")
+
+    client = discord.Client(intents=discord.Intents.default())
+
+    @client.event
+    async def on_ready():
+        channel = client.get_channel(int(channel_id))
+        if channel:
+            await channel.send(error_message)
+            await client.close()
+        else:
+            print("디스코드 채널을 찾을 수 없습니다")
+
+    client.run(bot_token)
 
 def remove_special_characters_using_regex(input_string):
     # 정규표현식으로 특수 문자 제거
     pattern = r"[^\w\s]"
     result_string = re.sub(pattern, "", input_string)
     return result_string
-
+    
 
 class InstagramUtils:
     """인스타그램 데이터 수집을 위한 유틸 클래스"""
@@ -30,7 +50,12 @@ class InstagramUtils:
 
     cl.delay_range = [1, 2]
 
-    cl.login(INSTA_ID, INSTA_PW)
+    try:
+        cl.login(INSTA_ID, INSTA_PW)
+    except Exception as e:
+        send_error_to_discord(e)
+        raise e
+
     cl.dump_settings("session.json")
 
     logger.info("Instagram Login %s" % INSTA_ID)
@@ -83,3 +108,5 @@ class InstagramUtils:
 
         all_text = remove_special_characters_using_regex(all_text)
         return [all_text.replace("\n", "")]
+
+

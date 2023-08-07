@@ -1,5 +1,9 @@
 import logging
 import pickle
+import os
+import discord
+
+from dotenv import load_dotenv
 
 import numpy as np
 from flask import Flask, jsonify, request, make_response
@@ -60,6 +64,7 @@ def extract_text_instagram(user_name: str):
     try:
         text = util.post_by_user(user_name)
     except Exception as e:
+        send_error_to_discord(e)
         raise e
 
     print("====================")
@@ -172,6 +177,26 @@ def predict_by_introduction():
 
     return jsonify(result)
 
+
+# 디스코드로 에러 전송 (봇)
+def send_error_to_discord(error_message):
+    # 환경변수 가져오기
+    load_dotenv()
+    bot_token = os.environ.get("BOT_TOKEN")
+    channel_id = os.environ.get("CHANNEL_ID")
+
+    client = discord.Client(intents=discord.Intents.default())
+
+    @client.event
+    async def on_ready():
+        channel = client.get_channel(int(channel_id))
+        if channel:
+            await channel.send(error_message)
+            await client.close()
+        else:
+            print("디스코드 채널을 찾을 수 없습니다")
+
+    client.run(bot_token)
 
 if __name__ == '__main__':
     app.run()
