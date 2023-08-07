@@ -5,7 +5,19 @@ import discord
 
 from dotenv import load_dotenv
 from instagrapi import Client
-from instagrapi.exceptions import ClientLoginRequired
+from instagrapi.exceptions import (
+    ClientConnectionError,
+    ClientForbiddenError,
+    ClientLoginRequired,
+    ClientThrottledError,
+    GenericRequestError,
+    PleaseWaitFewMinutes,
+    RateLimitError,
+    SentryBlock,
+    BadPassword,
+)
+from requests.exceptions import ProxyError
+from urllib3.exceptions import HTTPError
 
 import CustomErrors
 
@@ -34,7 +46,6 @@ def remove_special_characters_using_regex(input_string):
     pattern = r"[^\w\s]"
     result_string = re.sub(pattern, "", input_string)
     return result_string
-    
 
 class InstagramUtils:
     """인스타그램 데이터 수집을 위한 유틸 클래스"""
@@ -43,17 +54,38 @@ class InstagramUtils:
     # 로거 설정
     logger = logging.getLogger()
 
+    cl = Client()
+    cl.delay_range = [1, 2]
+
     # 인스타그램 로그인
     INSTA_ID = os.environ.get("INSTA_ID")
     INSTA_PW = os.environ.get("INSTA_PW")
-    cl = Client()
-
-    cl.delay_range = [1, 2]
+    NEXT_INSTA_ID = os.environ.get("NEXT_INSTA_ID")
+    NEXT_INSTA_PW = os.environ.get("NEXT_INSTA_PW")
 
     try:
         cl.login(INSTA_ID, INSTA_PW)
+    # 로그인 에러 발생 시 디스코드 봇 전송 및 다른 ID로 재로그인 시도 (재로그인 함수로 모듈화 필요)
+    except (ProxyError, HTTPError, GenericRequestError, ClientConnectionError, ): # Network level
+        send_error_to_discord("Network error")
+        cl.logout()
+        cl.login(NEXT_INSTA_ID, NEXT_INSTA_PW)
+    except (SentryBlock, RateLimitError, ClientThrottledError): # Instagram limit level
+        send_error_to_discord("Instagram limit error")
+        cl.logout()
+        cl.login(NEXT_INSTA_ID, NEXT_INSTA_PW)
+    except (ClientLoginRequired, PleaseWaitFewMinutes, ClientForbiddenError): # Logical level
+        send_error_to_discord("Logical error")
+        cl.logout()
+        cl.login(NEXT_INSTA_ID, NEXT_INSTA_PW)
+    except (BadPassword): # password error
+        send_error_to_discord("password error")
+        cl.logout()
+        cl.login(NEXT_INSTA_ID, NEXT_INSTA_PW)
     except Exception as e:
         send_error_to_discord(e)
+        cl.logout()
+        cl.login(NEXT_INSTA_ID, NEXT_INSTA_PW)
         raise e
 
     cl.dump_settings("session.json")
