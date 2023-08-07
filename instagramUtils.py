@@ -16,6 +16,16 @@ def remove_special_characters_using_regex(input_string):
     result_string = re.sub(pattern, "", input_string)
     return result_string
 
+def translate_text(original_text):
+    # 텍스트 영어로 번역
+
+    # 번역기 생성
+    translator = Translator()
+
+    # 번역 (번역전 언어 감지 -> 번역될 언어는 자동으로 영어로 설정됨)
+    translated_text = translator.translate(original_text).text
+
+    return translated_text
 
 class InstagramUtils:
     """인스타그램 데이터 수집을 위한 유틸 클래스"""
@@ -82,20 +92,12 @@ class InstagramUtils:
         for post in posts:
             all_text += post.caption_text
 
-        all_text = remove_special_characters_using_regex(all_text)
-        return [all_text.replace("\n", "")]
+        all_text = remove_special_characters_using_regex(all_text).replace("\n", "")
+        translated_text = translate_text(all_text)
 
-def translate_text(text):
-    # 텍스트 영어로 번역
+        print("원본 : ", all_text)
+        print("번역결과 : ", translated_text)
 
-    # 번역기 생성
-    translator = Translator()
+        return [translated_text]
 
-    # 언어 감지를 원하는 문장 설정
-    original_text = text
 
-    # 번역 (번역전 언어 감지 -> 번역될 언어는 자동으로 영어로 설정됨)
-    translated_text = translator.translate(original_text)
-    print(translated_text)
-
-    return translated_text
