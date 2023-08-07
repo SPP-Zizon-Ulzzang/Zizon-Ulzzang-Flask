@@ -5,6 +5,7 @@ import re
 from dotenv import load_dotenv
 from instagrapi import Client
 from instagrapi.exceptions import ClientLoginRequired
+from googletrans import Translator
 
 import CustomErrors
 
