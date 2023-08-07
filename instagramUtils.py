@@ -41,6 +41,8 @@ class InstagramUtils:
 
     cl.delay_range = [1, 2]
 
+    print(INSTA_ID, INSTA_PW)
+
     cl.login(INSTA_ID, INSTA_PW)
     cl.dump_settings("session.json")
 
