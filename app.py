@@ -87,10 +87,12 @@ def mbti_predict(text: str):
     print(f"Highest probability : {max_mbti_class}")
 
     # 각 mbti별 확률
-    results_dict = {mbti: prob for mbti, prob in zip(mbti_names, probabilities[0])}
-    results_dict.update({"mbti": max_mbti_class})
+    all_predict_dict = {"prob": {mbti: prob for mbti, prob in zip(mbti_names, probabilities[0])}}
 
-    return results_dict
+    result_dict = {"mbti": max_mbti_class}
+    result_dict.update(all_predict_dict)
+
+    return result_dict
 
 
 @app.route('/instagram', methods=['GET'])
