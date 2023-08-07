@@ -84,3 +84,18 @@ class InstagramUtils:
 
         all_text = remove_special_characters_using_regex(all_text)
         return [all_text.replace("\n", "")]
+
+def translate_text(text):
+    # 텍스트 영어로 번역
+
+    # 번역기 생성
+    translator = Translator()
+
+    # 언어 감지를 원하는 문장 설정
+    original_text = text
+
+    # 번역 (번역전 언어 감지 -> 번역될 언어는 자동으로 영어로 설정됨)
+    translated_text = translator.translate(original_text)
+    print(translated_text)
+
+    return translated_text
