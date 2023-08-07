@@ -1,10 +1,12 @@
 import logging
 import pickle
 
+import numpy as np
 from flask import Flask, jsonify, request, make_response
 import warnings
 
 from instagrapi.exceptions import LoginRequired
+from sklearn.preprocessing import LabelEncoder
 
 from instagramUtils import InstagramUtils as IUtils
 import CustomErrors
@@ -20,8 +22,31 @@ with open('saved_model.pkl', 'rb') as file:
 # 인스타그램 유틸 인스턴스 생성
 util = IUtils()
 
+# Label Encoder 생성
+label_encoder = LabelEncoder()
+
 # 로거 생성
 logger = logging.getLogger()
+
+# mbti
+mbti_names = [
+    "ENFP",
+    "ESFP",
+    "INFJ",
+    "ISFJ",
+    "ISTP",
+    "ENFJ",
+    "ENTJ",
+    "INTJ",
+    "INFP",
+    "ISFP",
+    "ESTP",
+    "INTP",
+    "ESTJ",
+    "ISTJ",
+    "ENTP",
+    "INTJ",
+]
 
 
 def extract_text_instagram(user_name: str):
@@ -47,16 +72,25 @@ def extract_text_instagram(user_name: str):
 
 def mbti_predict(text: str):
     """
-    입력받은 텍스트로 부터 모델을 통한 mbti 예측
+    입력받은 텍스트로 부터 모델을 통한 mbti 예측 및 각 mbti별 확률 계산
     :param text:
     :return: mbti: str
     """
     # 모델을 통한 예측
-    predicted_labels = model.predict(text)
+    dec_func = model.decision_function(text)
+    probabilities = np.round(np.exp(dec_func) / np.sum(np.exp(dec_func)) * 100, 2)
 
-    print("predicted label: ", predicted_labels)
+    max_prob_index = np.argmax(probabilities)
 
-    return predicted_labels[0]
+    # 가장 높은 확률의 mbti 출력
+    max_mbti_class = mbti_names[max_prob_index]
+    print(f"Highest probability : {max_mbti_class}")
+
+    # 각 mbti별 확률
+    results_dict = {mbti: prob for mbti, prob in zip(mbti_names, probabilities[0])}
+    results_dict.update({"mbti": max_mbti_class})
+
+    return results_dict
 
 
 @app.route('/instagram', methods=['GET'])
@@ -114,17 +148,14 @@ def predict_by_instagram():
         logger.error("error: %s" % message)
         return response
 
-    response = {
-        "mbti": str(result)
-    }
     # 결과를 JSON 형식으로 반환
-    return jsonify(response)
+    return jsonify(result)
 
 
 @app.route('/introduction', methods=['GET'])
 def predict_by_introduction():
     """
-    자기 소개를 기반으로 mbti 옟 ㄱ
+    자기 소개를 기반으로 mbti 예측
     :return:
     """
     text = request.args.get('text')
@@ -132,12 +163,9 @@ def predict_by_introduction():
     logger.info("Introduction: %s" % text)
     print("introduction: ", text)
 
-    mbti = mbti_predict([text])
+    result = mbti_predict([text])
 
-    response = {
-        "mbti": str(mbti)
-    }
-    return jsonify(response)
+    return jsonify(result)
 
 
 if __name__ == '__main__':
