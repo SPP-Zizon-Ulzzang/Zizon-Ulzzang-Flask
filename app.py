@@ -47,6 +47,8 @@ mbti_names = [
     "ENTP",
     "INTJ",
 ]
+label_encoder = LabelEncoder()
+y_encoded = label_encoder.fit_transform(mbti_names)
 
 
 def extract_text_instagram(user_name: str):
@@ -83,14 +85,15 @@ def mbti_predict(text: str):
     max_prob_index = np.argmax(probabilities)
 
     # 가장 높은 확률의 mbti 출력
-    max_mbti_class = mbti_names[max_prob_index]
+    max_mbti_class = label_encoder.classes_[max_prob_index]
     print(f"Highest probability : {max_mbti_class}")
 
     # 각 mbti별 확률
-    all_predict_dict = {"prob": {mbti: prob for mbti, prob in zip(mbti_names, probabilities[0])}}
+    all_predict_dict = {mbti: prob for mbti, prob in zip(label_encoder.classes_, probabilities[0])}
+    top_five = dict(sorted(all_predict_dict.items(), key=lambda item: item[1], reverse=True)[:5])
 
     result_dict = {"mbti": max_mbti_class}
-    result_dict.update(all_predict_dict)
+    result_dict.update({"prob": top_five})
 
     return result_dict
 
