@@ -1,3 +1,4 @@
+import datetime
 import logging
 import os
 import re
@@ -23,11 +24,13 @@ from discord_bot import send_error_to_discord
 
 import CustomErrors
 
+
 def remove_special_characters_using_regex(input_string):
     # 정규표현식으로 특수 문자 제거
     pattern = r"[^\w\s]"
     result_string = re.sub(pattern, "", input_string)
     return result_string
+
 
 def translate_text(original_text):
     # 텍스트 영어로 번역
@@ -39,6 +42,7 @@ def translate_text(original_text):
     translated_text = translator.translate(original_text).text
 
     return translated_text
+
 
 class InstagramUtils:
     """인스타그램 데이터 수집을 위한 유틸 클래스"""
@@ -59,20 +63,24 @@ class InstagramUtils:
     try:
         cl.login(INSTA_ID, INSTA_PW)
     # 로그인 에러 발생 시 디스코드 봇 전송 및 다른 ID로 재로그인 시도 (재로그인 함수로 모듈화 필요)
-    except (ProxyError, HTTPError, GenericRequestError, ClientConnectionError, ): # Network level
-        send_error_to_discord("Network error")
+    except (ProxyError, HTTPError, GenericRequestError, ClientConnectionError,):  # Network level
+        logger.error("Network error")
+        send_error_to_discord("Network error - " + str(datetime.datetime.now()))
         cl.logout()
         cl.login(NEXT_INSTA_ID, NEXT_INSTA_PW)
-    except (SentryBlock, RateLimitError, ClientThrottledError): # Instagram limit level
-        send_error_to_discord("Instagram limit error")
+    except (SentryBlock, RateLimitError, ClientThrottledError):  # Instagram limit level
+        logger.error("Instagram limit error")
+        send_error_to_discord("Instagram limit error - " + str(datetime.datetime.now()))
         cl.logout()
         cl.login(NEXT_INSTA_ID, NEXT_INSTA_PW)
-    except (ClientLoginRequired, PleaseWaitFewMinutes, ClientForbiddenError): # Logical level
-        send_error_to_discord("Logical error")
+    except (ClientLoginRequired, PleaseWaitFewMinutes, ClientForbiddenError):  # Logical level
+        logger.error("Logical error")
+        send_error_to_discord("Logical error - " + str(datetime.datetime.now()))
         cl.logout()
         cl.login(NEXT_INSTA_ID, NEXT_INSTA_PW)
-    except (BadPassword): # password error
-        send_error_to_discord("password error")
+    except (BadPassword):  # password error
+        logger.error("Password error")
+        send_error_to_discord("Password error - " + str(datetime.datetime.now()))
         cl.logout()
         cl.login(NEXT_INSTA_ID, NEXT_INSTA_PW)
     except Exception as e:
@@ -141,4 +149,3 @@ class InstagramUtils:
         print("번역결과 : ", translated_text)
 
         return [translated_text]
-
