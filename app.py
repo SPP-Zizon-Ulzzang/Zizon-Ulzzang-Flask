@@ -8,7 +8,7 @@ import warnings
 from instagrapi.exceptions import LoginRequired
 from sklearn.preprocessing import LabelEncoder
 
-from instagramUtils import InstagramUtils as IUtils
+from instagram_viewer_crawl import instagram_viewer_crawling
 from discord_bot import send_error_to_discord
 
 import CustomErrors
@@ -20,9 +20,6 @@ app = Flask(__name__)
 # 모델 불러오기
 with open('saved_model.pkl', 'rb') as file:
     model = pickle.load(file)
-
-# 인스타그램 유틸 인스턴스 생성
-util = IUtils()
 
 # Label Encoder 생성
 label_encoder = LabelEncoder()
@@ -60,7 +57,8 @@ def extract_text_instagram(user_name: str):
     :return: text: str
     """
     try:
-        text = util.post_by_user(user_name)
+        text = instagram_viewer_crawling(user_name)
+
     except Exception as e:
         send_error_to_discord(e)
         raise e
@@ -90,6 +88,7 @@ def mbti_predict(text: str):
     # 가장 높은 확률의 mbti 출력
     max_mbti_class = label_encoder.classes_[max_prob_index]
     print(f"Highest probability : {max_mbti_class}")
+    send_error_to_discord(f"mbti 에측 결과 : {max_mbti_class}")
 
     # 각 mbti별 확률
     all_predict_dict = {mbti: prob for mbti, prob in zip(label_encoder.classes_, probabilities[0])}
@@ -112,19 +111,6 @@ def predict_by_instagram():
 
     print("sns_url: ", sns_url)
     logger.info("Instagram ID: %s" % sns_url)
-
-    # 세션 확인
-    try:
-        util.cl.get_timeline_feed()
-    except LoginRequired:
-        logger.error("Session is invalid, need to login via username and password")
-
-        old_session = util.cl.get_settings()
-
-        util.cl.set_settings({})
-        util.cl.set_uuids(old_session["uuids"])
-
-        util.re_login()
 
     # 수집 데이터 기반으로 분류 실행
     try:
