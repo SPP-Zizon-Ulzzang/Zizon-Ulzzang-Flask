@@ -9,6 +9,8 @@ from instagrapi.exceptions import LoginRequired
 from sklearn.preprocessing import LabelEncoder
 
 from instagramUtils import InstagramUtils as IUtils
+from discord_bot import send_error_to_discord
+
 import CustomErrors
 
 warnings.filterwarnings('ignore')
@@ -60,6 +62,7 @@ def extract_text_instagram(user_name: str):
     try:
         text = util.post_by_user(user_name)
     except Exception as e:
+        send_error_to_discord(e)
         raise e
 
     print("====================")
@@ -171,7 +174,6 @@ def predict_by_introduction():
     result = mbti_predict([text])
 
     return jsonify(result)
-
 
 if __name__ == '__main__':
     app.run()
