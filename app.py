@@ -62,12 +62,7 @@ def extract_text_instagram(user_name: str):
         text = IUtils.post_by_user(user_name)
 
     except Exception as e:
-        send_error_to_discord(e)
         raise e
-
-    print("====================")
-    print("text: ", text)
-    logger.info("text: %s" % text)
 
     if len(text) < 1:
         raise RuntimeError("비공개 계정 또는 텍스트가 존재하지 않습니다.")
@@ -90,7 +85,6 @@ def mbti_predict(text: str):
     # 가장 높은 확률의 mbti 출력
     max_mbti_class = label_encoder.classes_[max_prob_index]
     print(f"Highest probability : {max_mbti_class}")
-    send_error_to_discord(f"mbti 에측 결과 : {max_mbti_class}")
 
     # 각 mbti별 확률
     all_predict_dict = {mbti: prob for mbti, prob in zip(label_encoder.classes_, probabilities[0])}
