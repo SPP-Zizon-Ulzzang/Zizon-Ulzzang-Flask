@@ -5,21 +5,9 @@ import re
 
 from dotenv import load_dotenv
 from instagrapi import Client
-from instagrapi.exceptions import ClientLoginRequired
+from instagrapi.exceptions import ClientLoginRequired, LoginRequired
 from googletrans import Translator
-from instagrapi.exceptions import (
-    ClientConnectionError,
-    ClientForbiddenError,
-    ClientLoginRequired,
-    ClientThrottledError,
-    GenericRequestError,
-    PleaseWaitFewMinutes,
-    RateLimitError,
-    SentryBlock,
-    BadPassword,
-)
-from requests.exceptions import ProxyError
-from urllib3.exceptions import HTTPError
+
 from discord_bot import send_error_to_discord
 
 import CustomErrors
@@ -33,7 +21,11 @@ def remove_special_characters_using_regex(input_string):
 
 
 def translate_text(original_text):
-    # 텍스트 영어로 번역
+    """
+    텍스트 영어로 번역
+    :param original_text:
+    :return:
+    """
 
     # 번역기 생성
     translator = Translator()
@@ -52,59 +44,73 @@ class InstagramUtils:
     logger = logging.getLogger()
 
     cl = Client()
-    cl.delay_range = [1, 2]
 
-    # 인스타그램 로그인
+    # 인스타그램 ID, PW
     INSTA_ID = os.environ.get("INSTA_ID")
     INSTA_PW = os.environ.get("INSTA_PW")
     NEXT_INSTA_ID = os.environ.get("NEXT_INSTA_ID")
     NEXT_INSTA_PW = os.environ.get("NEXT_INSTA_PW")
 
-    try:
-        cl.login(INSTA_ID, INSTA_PW)
-    # 로그인 에러 발생 시 디스코드 봇 전송 및 다른 ID로 재로그인 시도 (재로그인 함수로 모듈화 필요)
-    except (ProxyError, HTTPError, GenericRequestError, ClientConnectionError,):  # Network level
-        logger.error("Network error")
-        send_error_to_discord("Network error - " + str(datetime.datetime.now()))
-        cl.logout()
-        cl.login(NEXT_INSTA_ID, NEXT_INSTA_PW)
-    except (SentryBlock, RateLimitError, ClientThrottledError):  # Instagram limit level
-        logger.error("Instagram limit error")
-        send_error_to_discord("Instagram limit error - " + str(datetime.datetime.now()))
-        cl.logout()
-        cl.login(NEXT_INSTA_ID, NEXT_INSTA_PW)
-    except (ClientLoginRequired, PleaseWaitFewMinutes, ClientForbiddenError):  # Logical level
-        logger.error("Logical error")
-        send_error_to_discord("Logical error - " + str(datetime.datetime.now()))
-        cl.logout()
-        cl.login(NEXT_INSTA_ID, NEXT_INSTA_PW)
-    except (BadPassword):  # password error
-        logger.error("Password error")
-        send_error_to_discord("Password error - " + str(datetime.datetime.now()))
-        cl.logout()
-        cl.login(NEXT_INSTA_ID, NEXT_INSTA_PW)
-    except Exception as e:
-        send_error_to_discord(e)
-        cl.logout()
-        cl.login(NEXT_INSTA_ID, NEXT_INSTA_PW)
-        raise e
+    def __init__(self):
+        # 행동 사이 딜레이 설정
+        self.cl.delay_range = [1, 2]
 
-    print(INSTA_ID, INSTA_PW)
+        try:
+            self.login_user(self.INSTA_ID, self.INSTA_PW)
+        except Exception as e:
+            send_error_to_discord(
+                str(datetime.datetime.now()) + str(e))
 
-    cl.login(INSTA_ID, INSTA_PW)
-    cl.dump_settings("session.json")
-
-    logger.info("Instagram Login %s" % INSTA_ID)
-    print("login - ", INSTA_ID)
-
-    def re_login(self):
+    def login_user(self, insta_id, insta_pw):
         """
-        재 로그인
+        인스타그램 로그인
         :return:
         """
-        self.cl.login(self.INSTA_ID, self.INSTA_PW)
-        self.cl.dump_settings("session.json")
-        self.logger.info("Instagram Login %s" % self.INSTA_ID)
+        session = self.cl.load_settings("session.json")
+
+        login_via_session = False
+        login_via_pw = False
+
+        if session:
+            try:
+                self.cl.set_settings(session)
+                self.cl.login(insta_id, insta_pw)
+
+                # check if session is valid
+                try:
+                    self.cl.get_timeline_feed()
+                except LoginRequired:
+                    self.logger.info("Session is invalid, need to login via username and password")
+
+                    old_session = self.cl.get_settings()
+
+                    # use the same device uuids across logins
+                    self.cl.set_settings({})
+                    self.cl.set_uuids(old_session["uuids"])
+
+                    self.cl.login(insta_id, insta_pw)
+                login_via_session = True
+            except Exception as e:
+                self.logger.info("Couldn't login user using session information: %s" % e)
+                send_error_to_discord(
+                    str(datetime.datetime.now()) + "Couldn't login user using session information: " + str(e))
+
+        if not login_via_session:
+            try:
+                self.logger.info("Attempting to login via username and password. username: %s" % insta_id)
+                if self.cl.login(insta_id, insta_pw):
+                    login_via_pw = True
+            except Exception as e:
+                self.logger.info("Couldn't login user using username and password: %s" % e)
+                send_error_to_discord(
+                    str(datetime.datetime.now()) + "Couldn't login user using username and password: " + str(e))
+
+        if not login_via_pw and not login_via_session:
+            raise Exception("Couldn't login user with either password or session")
+
+        print("Instagram Login", insta_id, insta_pw)
+        self.logger.info("Instagram Login %s" % insta_id)
+        send_error_to_discord(str(datetime.datetime.now()) + "Instagram Login - " + str(insta_id))
 
     def post_by_user(self, user_name):
         """
@@ -112,6 +118,14 @@ class InstagramUtils:
         :param user_name:
         :return: text: [str]
         """
+        try:
+            self.cl.get_timeline_feed()  # 피드 새로고침 후 예외 발생 시 재 로그인
+        except (ClientLoginRequired, LoginRequired):
+            self.cl.relogin()
+        except Exception as e:
+            self.logger.error(e)
+            send_error_to_discord(str(datetime.datetime.now())+str(e))
+
         try:
             user_info = self.cl.user_info_by_username(user_name)
             isPirvate = user_info.is_private
@@ -121,11 +135,10 @@ class InstagramUtils:
                 raise CustomErrors.PrivateAccountError("비공개 계정입니다.")
             if isNoPost:
                 raise CustomErrors.NoPostError("게시물이 없습니다.")
-        except ClientLoginRequired as e:
-            raise e
         except CustomErrors.CustomError as e:
             raise e
         except Exception as e:
+            self.logger.error(e)
             raise CustomErrors.NoAccountError("존재하지 않는 계정입니다.")
 
         # 인스타 게시물 수 by username(id)
@@ -142,7 +155,10 @@ class InstagramUtils:
         for post in posts:
             all_text += post.caption_text
 
+        # 특수기호 및 개행문자 제거
         all_text = remove_special_characters_using_regex(all_text).replace("\n", "")
+
+        # 비 영문 게시글 영어로 번역
         translated_text = translate_text(all_text)
 
         print("원본 : ", all_text)
