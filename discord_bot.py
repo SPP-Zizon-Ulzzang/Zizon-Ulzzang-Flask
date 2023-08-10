@@ -1,5 +1,5 @@
+import datetime
 import os
-# python3 -m pip install -U discord.py
 import discord
 from dotenv import load_dotenv
 
@@ -16,7 +16,7 @@ def send_error_to_discord(error_message):
     async def on_ready():
         channel = client.get_channel(int(channel_id))
         if channel:
-            await channel.send(error_message)
+            await channel.send(str(datetime.datetime.now())+"\n"+str(error_message))
             await client.close()
         else:
             print("디스코드 채널을 찾을 수 없습니다")
