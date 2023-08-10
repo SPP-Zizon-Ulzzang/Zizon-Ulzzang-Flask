@@ -5,10 +5,10 @@ import numpy as np
 from flask import Flask, jsonify, request, make_response
 import warnings
 
-from instagrapi.exceptions import LoginRequired
 from sklearn.preprocessing import LabelEncoder
 
-from instagram_viewer_crawl import instagram_viewer_crawling
+from instagramUtils import InstagramUtils
+
 from discord_bot import send_error_to_discord
 
 import CustomErrors
@@ -49,6 +49,8 @@ mbti_names = [
 label_encoder = LabelEncoder()
 y_encoded = label_encoder.fit_transform(mbti_names)
 
+IUtils = InstagramUtils()
+
 
 def extract_text_instagram(user_name: str):
     """
@@ -57,15 +59,10 @@ def extract_text_instagram(user_name: str):
     :return: text: str
     """
     try:
-        text = instagram_viewer_crawling(user_name)
+        text = IUtils.post_by_user(user_name)
 
     except Exception as e:
-        send_error_to_discord(e)
         raise e
-
-    print("====================")
-    print("text: ", text)
-    logger.info("text: %s" % text)
 
     if len(text) < 1:
         raise RuntimeError("비공개 계정 또는 텍스트가 존재하지 않습니다.")
@@ -88,7 +85,6 @@ def mbti_predict(text: str):
     # 가장 높은 확률의 mbti 출력
     max_mbti_class = label_encoder.classes_[max_prob_index]
     print(f"Highest probability : {max_mbti_class}")
-    send_error_to_discord(f"mbti 에측 결과 : {max_mbti_class}")
 
     # 각 mbti별 확률
     all_predict_dict = {mbti: prob for mbti, prob in zip(label_encoder.classes_, probabilities[0])}
@@ -121,25 +117,26 @@ def predict_by_instagram():
         print("error: ", e.args)
         message = str(e.args[0])
         response = make_response(message, 400)
-        logger.error("error: %s" % message)
+        logger.info("error: %s" % message)
         return response
     except CustomErrors.NoAccountError as e:
         print("error: ", e.args)
         message = str(e.args[0])
         response = make_response(message, 404)
-        logger.error("error: %s" % message)
+        logger.info("error: %s" % message)
         return response
     except CustomErrors.PrivateAccountError as e:
         print("error: ", e.args)
         message = str(e.args[0])
         response = make_response(message, 401)
-        logger.error("error: %s" % message)
+        logger.info("error: %s" % message)
         return response
     except Exception as e:
         print("error: ", e.args)
         message = str(e.args[0])
         response = make_response(message, 500)
         logger.error("error: %s" % message)
+        send_error_to_discord(message)
         return response
 
     # 결과를 JSON 형식으로 반환
@@ -160,6 +157,7 @@ def predict_by_introduction():
     result = mbti_predict([text])
 
     return jsonify(result)
+
 
 if __name__ == '__main__':
     app.run()
