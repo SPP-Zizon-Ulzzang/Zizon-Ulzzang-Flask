@@ -6,7 +6,7 @@ import re
 from dotenv import load_dotenv
 from instagrapi import Client
 from instagrapi.exceptions import ClientLoginRequired, LoginRequired
-from googletrans import Translator
+from translation import translate_text
 
 from discord_bot import send_error_to_discord
 
@@ -18,22 +18,6 @@ def remove_special_characters_using_regex(input_string):
     pattern = r"[^\w\s]"
     result_string = re.sub(pattern, "", input_string)
     return result_string
-
-
-def translate_text(original_text):
-    """
-    텍스트 영어로 번역
-    :param original_text:
-    :return:
-    """
-
-    # 번역기 생성
-    translator = Translator()
-
-    # 번역 (번역전 언어 감지 -> 번역될 언어는 자동으로 영어로 설정됨)
-    translated_text = translator.translate(original_text).text
-
-    return translated_text
 
 
 class InstagramUtils:
@@ -58,8 +42,7 @@ class InstagramUtils:
         try:
             self.login_user(self.INSTA_ID, self.INSTA_PW)
         except Exception as e:
-            send_error_to_discord(
-                str(datetime.datetime.now()) + str(e))
+            send_error_to_discord(e)
 
     def login_user(self, insta_id, insta_pw):
         """
@@ -92,8 +75,7 @@ class InstagramUtils:
                 login_via_session = True
             except Exception as e:
                 self.logger.info("Couldn't login user using session information: %s" % e)
-                send_error_to_discord(
-                    str(datetime.datetime.now()) + "Couldn't login user using session information: " + str(e))
+                send_error_to_discord(e)
 
         if not login_via_session:
             try:
@@ -102,15 +84,15 @@ class InstagramUtils:
                     login_via_pw = True
             except Exception as e:
                 self.logger.info("Couldn't login user using username and password: %s" % e)
-                send_error_to_discord(
-                    str(datetime.datetime.now()) + "Couldn't login user using username and password: " + str(e))
+                send_error_to_discord(e)
 
         if not login_via_pw and not login_via_session:
+            send_error_to_discord("Couldn't login user with either password or session")
             raise Exception("Couldn't login user with either password or session")
 
         print("Instagram Login", insta_id, insta_pw)
         self.logger.info("Instagram Login %s" % insta_id)
-        send_error_to_discord(str(datetime.datetime.now()) + "Instagram Login - " + str(insta_id))
+        send_error_to_discord("Instagram Login - " + str(insta_id))
 
     def post_by_user(self, user_name):
         """
@@ -124,7 +106,7 @@ class InstagramUtils:
             self.cl.relogin()
         except Exception as e:
             self.logger.error(e)
-            send_error_to_discord(str(datetime.datetime.now())+str(e))
+            send_error_to_discord(e)
 
         try:
             user_info = self.cl.user_info_by_username(user_name)
@@ -136,9 +118,10 @@ class InstagramUtils:
             if isNoPost:
                 raise CustomErrors.NoPostError("게시물이 없습니다.")
         except CustomErrors.CustomError as e:
+            self.logger.info(e)
             raise e
         except Exception as e:
-            self.logger.error(e)
+            self.logger.info(e)
             raise CustomErrors.NoAccountError("존재하지 않는 계정입니다.")
 
         # 인스타 게시물 수 by username(id)
