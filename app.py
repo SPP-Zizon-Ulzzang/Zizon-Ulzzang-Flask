@@ -51,6 +51,7 @@ y_encoded = label_encoder.fit_transform(mbti_names)
 
 IUtils = InstagramUtils()
 
+
 def extract_text_instagram(user_name: str):
     """
     사용자의 인스타id로부터 게시글의 텍스트 추출
@@ -122,25 +123,26 @@ def predict_by_instagram():
         print("error: ", e.args)
         message = str(e.args[0])
         response = make_response(message, 400)
-        logger.error("error: %s" % message)
+        logger.info("error: %s" % message)
         return response
     except CustomErrors.NoAccountError as e:
         print("error: ", e.args)
         message = str(e.args[0])
         response = make_response(message, 404)
-        logger.error("error: %s" % message)
+        logger.info("error: %s" % message)
         return response
     except CustomErrors.PrivateAccountError as e:
         print("error: ", e.args)
         message = str(e.args[0])
         response = make_response(message, 401)
-        logger.error("error: %s" % message)
+        logger.info("error: %s" % message)
         return response
     except Exception as e:
         print("error: ", e.args)
         message = str(e.args[0])
         response = make_response(message, 500)
         logger.error("error: %s" % message)
+        send_error_to_discord(message)
         return response
 
     # 결과를 JSON 형식으로 반환
@@ -161,6 +163,7 @@ def predict_by_introduction():
     result = mbti_predict([text])
 
     return jsonify(result)
+
 
 if __name__ == '__main__':
     app.run()
