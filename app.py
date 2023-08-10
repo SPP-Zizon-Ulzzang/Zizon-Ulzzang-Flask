@@ -5,10 +5,10 @@ import numpy as np
 from flask import Flask, jsonify, request, make_response
 import warnings
 
-from instagrapi.exceptions import LoginRequired
 from sklearn.preprocessing import LabelEncoder
 
-from instagram_viewer_crawl import instagram_viewer_crawling
+from instagramUtils import InstagramUtils
+
 from discord_bot import send_error_to_discord
 
 import CustomErrors
@@ -49,6 +49,7 @@ mbti_names = [
 label_encoder = LabelEncoder()
 y_encoded = label_encoder.fit_transform(mbti_names)
 
+IUtils = InstagramUtils()
 
 def extract_text_instagram(user_name: str):
     """
@@ -57,7 +58,7 @@ def extract_text_instagram(user_name: str):
     :return: text: str
     """
     try:
-        text = instagram_viewer_crawling(user_name)
+        text = IUtils.post_by_user(user_name)
 
     except Exception as e:
         send_error_to_discord(e)
